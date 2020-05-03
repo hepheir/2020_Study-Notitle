@@ -1,2 +1,2 @@
-model_checkpoint_path: "mnist_3_lyr"
-all_model_checkpoint_paths: "mnist_3_lyr"
+model_checkpoint_path: "mnist_3_lyr_tmp"
+all_model_checkpoint_paths: "mnist_3_lyr_tmp"

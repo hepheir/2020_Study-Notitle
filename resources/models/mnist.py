@@ -3,8 +3,13 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dens
 
 # --------------------------------
 
+input_shape = (28,28)
+checkpoint = 'resources/checkpoints/' + __file__.split('/')[-1].replace('.py', '')
+
+# --------------------------------
+
 model = tf.keras.models.Sequential([
-            Flatten(input_shape=(28, 28)),
+            Flatten(input_shape=input_shape),
             Dense(128, activation='relu'),
             Dropout(0.2),
             Dense(10, activation='softmax')
@@ -12,10 +17,6 @@ model = tf.keras.models.Sequential([
 model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
-
-# --------------------------------
-
-checkpoint = 'resources/checkpoints/' + __file__.split('/')[-1].replace('.py', '')
 
 # --------------------------------
 
