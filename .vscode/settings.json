@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/hepheir/opt/anaconda3/envs/ml/bin/python"
+    "python.pythonPath": "/Users/hepheir/opt/anaconda3/envs/ml/bin/python",
+    "git.ignoreLimitWarning": true
 }
