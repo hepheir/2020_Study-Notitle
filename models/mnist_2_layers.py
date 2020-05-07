@@ -44,9 +44,9 @@ if __name__ == "__main__":
     mnist = tf.keras.datasets.mnist
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_train, x_test = x_train / 255.0, x_test / 255.0
 
-    x_train = np.reshape(x_train, (x_train.shape[0], 28, 28, 1))
+    x_train = np.reshape(x_train / 255.0, tuple([x_train.shape[0]] + list(input_shape)))
+    x_test  = np.reshape( x_test / 255.0, tuple([ x_test.shape[0]] + list(input_shape)))
 
     model.fit(x_train, y_train, epochs=12)
     model.save_weights(checkpoint)

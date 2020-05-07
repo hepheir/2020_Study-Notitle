@@ -33,32 +33,54 @@ def getNumericKey(key):
 #
 # -----------------------------------------------------------
 
-input_shape = (28,28)
+input_shape = (28,28,1)
 
-# --------------------------------
-# 모델 정의
 # --------------------------------
 
 model = tf.keras.models.Sequential([
-            Flatten(input_shape=input_shape),
-            Dense(128, activation='relu'),
-            Dropout(0.2),
-            Dense(10, activation='softmax')
-        ])
+    Conv2D(filters=32,
+           kernel_size=(3,3),
+           padding='same',
+           activation='relu',
+           input_shape=input_shape),
+    MaxPooling2D(pool_size=(2,2)),
+    Dropout(0.25),
+    
+    Conv2D(filters=32,
+           kernel_size=(3,3),
+           padding='same',
+           activation='relu'),
+    MaxPooling2D(pool_size=(2,2)),
+    Dropout(0.25),
+
+    Flatten(),
+    Dense(128,
+          activation='relu'),
+    Dropout(0.2),
+    Dense(10,
+          activation='softmax')
+])
+
 model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
-
+    
 # --------------------------------
 # mnist 데이터베이스를 이용한 학습
 # --------------------------------
 
-mnist = tf.keras.datasets.mnist
+if False:
+    model.load_weights('models/checkpoints/mnist_2_layers')
+else:
+    mnist = tf.keras.datasets.mnist
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-model.fit(x_train, y_train, epochs=1)
+    x_train = np.reshape(x_train / 255.0, tuple([x_train.shape[0]] + list(input_shape)))
+    x_test  = np.reshape( x_test / 255.0, tuple([ x_test.shape[0]] + list(input_shape)))
+
+    model.fit(x_train, y_train, epochs=12)
+
 model.evaluate(x_test, y_test, verbose=2)
 
 # -----------------------------------------------------------
