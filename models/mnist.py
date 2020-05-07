@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dens
 # --------------------------------
 
 input_shape = (28,28)
-checkpoint = 'resources/checkpoints/' + __file__.split('/')[-1].replace('.py', '')
+checkpoint = 'models/checkpoints/mnist'
 
 # --------------------------------
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
-    model.fit(x_train, y_train, epochs=8)
+    model.fit(x_train, y_train, epochs=16)
     model.save_weights(checkpoint)
 
     model.evaluate(x_test, y_test, verbose=2)

@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dens
 # --------------------------------
 
 input_shape = (28,28,1)
-checkpoint = 'resources/checkpoints/' + __file__.split('/')[-1].replace('.py', '')
+checkpoint = 'models/checkpoints/mnist_2_layers'
 
 # --------------------------------
 
