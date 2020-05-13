@@ -11,7 +11,7 @@ import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-# 모델을 바꾸려면 여기서 수정.
+# 모델을 바꾸려면 여기서 수정. (레포지토리의 'models/' 디렉토리에서 선택)
 from models.mnist_2_layers import model, checkpoint, input_shape
 
 def writeText(frame, txt, pos=(32,16)):
@@ -72,17 +72,20 @@ if __name__ == '__main__':
         contours, hierarchy = cv2.findContours(red_mask,
                                                cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
-                                               
-        x_data = []
-        box    = []
+
         # -----------------------------------------------------------
         # Normalize each hand writing
         # -----------------------------------------------------------
+        x_data = []
+        box    = []
+
         for num_cont in contours:
+            # 각 컨투어(=숫자)에 대한 28x28 정규화 된 이미지 생성 루틴
             x,y,w,h = cv2.boundingRect(num_cont)
             frame = cv2.rectangle(frame, (x,y), (x+w, y+h), (0,0,255))
 
-            # 컨투어를 (-x,-y)만큼 평행이동하여, 원점 근처로 옮김
+            # 컨투어를 (dx,dy)만큼 평행이동하여, 원점 근처로 옮김.
+            #   이후 과정에서 새로운 '정사각형' 프레임의 중앙에 위치시키기 위해, 적절히 dx, dy를 조정
             dx, dx = 0, 0
             if w > h:
                 dx = -x
@@ -95,13 +98,13 @@ if __name__ == '__main__':
                 point[0,0] += dx
                 point[0,1] += dy
             
+            # 새로 생성한 정사각형 형태의 프레임에 삽입 : num_frame
             n = max([h,w])
-            # 새로 생성한 (w,h)크기의 프레임에 삽입 : num_frame
             num_frame = np.zeros((n,n), dtype=np.uint8)
             cv2.drawContours(num_frame, [num_cont], 0, 255, -1)
 
             # input_shape의 형태에 맞게 맞추어주기. (28x28x1)
-            _ksize = tuple([2*(n//56)+1] * 2)
+            _ksize = tuple([2*(n//56)+1] * 2) # 홀수를 유지, 숫자 프레임의 너비 비율에 맞게 적절한 커널 사이즈 지정
             num_frame = cv2.dilate(num_frame, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, _ksize))
             num_frame = cv2.resize(num_frame, (28, 28))
             num_frame = num_frame.reshape(input_shape)
@@ -109,15 +112,18 @@ if __name__ == '__main__':
             x_data.append(num_frame)
             box.append([x,y,w,h])
 
-        x_data = np.array(x_data)
         # -----------------------------------------------------------
         # Predict using pre-trained model
         # -----------------------------------------------------------
+        x_data = np.array(x_data)
+
         if len(x_data):
+            # 모든 숫자에 대해 한 번에 예측
             p = model.predict(x_data)
             y_data = [np.where(_p == max(_p))[0][0] for _p in p]
 
             for i in range(len(x_data)):
+                # 예측된 값의 확인을 용이하게 하기위해, 각 숫자 바운딩 박스 주변에 예측된 값을 출력
                 x,y,w,h = box[i]
                 writeText(frame, '%d' % y_data[i], pos=(x,y - 4))
 
@@ -130,6 +136,7 @@ if __name__ == '__main__':
         # -----------------------------------------------------------
         # Re-train model (if the prediction is wrong)
         # -----------------------------------------------------------
+        # # TODO: 재학습 과정은 나중에 생각.
         # x_train = x
         # y_train = np.expand_dims(getNumericKey(key), axis=0)
 
