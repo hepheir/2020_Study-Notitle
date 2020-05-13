@@ -125,7 +125,7 @@ if __name__ == '__main__':
             for i in range(len(x_data)):
                 # 예측된 값의 확인을 용이하게 하기위해, 각 숫자 바운딩 박스 주변에 예측된 값을 출력
                 x,y,w,h = box[i]
-                writeText(frame, '%d' % y_data[i], pos=(x,y - 4))
+                writeText(frame, str(y_data[i]), pos=(x,y - 4))
 
         # -----------------------------------------------------------
         # Key mappings
