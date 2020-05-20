@@ -12,15 +12,16 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 
 # 모델을 바꾸려면 여기서 수정. (레포지토리의 'models/' 디렉토리에서 선택)
+
 from models.mnist_2_layers import model, checkpoint, input_shape
 
-def writeText(frame, txt, pos=(32,16)):
+def writeText(frame, txt, color=(128, 128, 255), pos=(32,16)):
     cv2.putText(frame,
                 txt,
                 pos,               # Coordinates
                 cv2.FONT_HERSHEY_PLAIN, # 
                 1.2,                    # Font scale
-                (128, 128, 255),        # Font color
+                color,        # Font color
                 lineType=cv2.LINE_AA)
 
 def getNumericKey(key):
@@ -42,12 +43,25 @@ def createMask_red(frame):
                                 (  0, 48, 48),
                                 (255,255,255))
     return cv2.bitwise_and(red_yuv_mask, red_hsv_mask)
-    
+
+def save_data(x_test, y_test):
+    # 학습(또는 테스트)데이터와 예측값을 지정된 디렉토리안에 저장한다.
+    path = 'out/'
+    status = [0] * 10
+    for i in range(len(x_test)):
+        x, y = np.squeeze(x_test[i]), y_test[i]
+
+        fname = '%s_%s_%d.png' % (str(y), str(cv2.getTickCount()), status[y])
+        status[y] += 1
+
+        cv2.imwrite(path + fname, x)
+
+    print('files saved at ' + path)
 
 if __name__ == '__main__':
     model.load_weights(checkpoint)
 
-    vidIn = cv2.VideoCapture(1)
+    vidIn = cv2.VideoCapture(0)
     # vidIn = cv2.VideoCapture('res/raw/TEST.MOV')
 
     # 적절한 커널 크기 결정
@@ -80,31 +94,29 @@ if __name__ == '__main__':
         box    = []
 
         for num_cont in contours:
-            # 각 컨투어(=숫자)에 대한 28x28 정규화 된 이미지 생성 루틴
+        # 각 컨투어(=숫자)에 대한 28x28 정규화 된 이미지 생성 루틴
             x,y,w,h = cv2.boundingRect(num_cont)
+
             frame = cv2.rectangle(frame, (x,y), (x+w, y+h), (0,0,255))
 
-            # 컨투어를 (dx,dy)만큼 평행이동하여, 원점 근처로 옮김.
+            # 프레임으로 부터 숫자를 잘라냄 (num_masked)
+            num_mask = np.zeros(red_mask.shape, dtype=np.uint8)
+            cv2.drawContours(num_mask, [num_cont], 0, 255, -1)
+            num_masked = cv2.bitwise_and(red_mask,red_mask, mask=num_mask)[y:y+h, x:x+w]
+
+            # 잘라낸 숫자를 (dx,dy)만큼 평행이동하여, 원점 근처로 옮김.
             #   이후 과정에서 새로운 '정사각형' 프레임의 중앙에 위치시키기 위해, 적절히 dx, dy를 조정
             dx, dy = 0, 0
-            if w > h:
-                dx = -x
-                dy = -y + (w-h)//2
-            else:
-                dx = -x + (h-w)//2
-                dy = -y
-            
-            for point in num_cont:
-                point[0,0] += dx
-                point[0,1] += dy
+            if (w > h): dy = (w-h)//2
+            else:       dx = (h-w)//2
             
             # 새로 생성한 정사각형 형태의 프레임에 삽입 : num_frame
             n = max([h,w])
             num_frame = np.zeros((n,n), dtype=np.uint8)
-            cv2.drawContours(num_frame, [num_cont], 0, 255, -1)
+            num_frame[dy:dy+h, dx:dx+w] = num_masked
 
             # input_shape의 형태에 맞게 맞추어주기. (28x28x1)
-            _ksize = tuple([2*(n//56)+1] * 2) # 홀수를 유지, 숫자 프레임의 너비 비율에 맞게 적절한 커널 사이즈 지정
+            _ksize = tuple([2*(n//72)+1] * 2) # 홀수를 유지, 숫자 프레임의 너비 비율에 맞게 적절한 커널 사이즈 지정
             num_frame = cv2.dilate(num_frame, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, _ksize))
             num_frame = cv2.resize(num_frame, (28, 28))
             num_frame = num_frame.reshape(input_shape)
@@ -125,13 +137,17 @@ if __name__ == '__main__':
             for i in range(len(x_data)):
                 # 예측된 값의 확인을 용이하게 하기위해, 각 숫자 바운딩 박스 주변에 예측된 값을 출력
                 x,y,w,h = box[i]
-                writeText(frame, str(y_data[i]), pos=(x,y - 4))
+                if max(p[i]) < 1: # 불확실한 예측에는 노랑색 사용
+                    writeText(frame, str(y_data[i]), color=(0,255,255), pos=(x, y-4))
+                else:
+                    writeText(frame, str(y_data[i]), pos=(x,y-4))
 
         # -----------------------------------------------------------
         # Key mappings
         # -----------------------------------------------------------
         key = cv2.waitKey(20) & 0xFF
         if key == 27: break # ESC
+        if key == ord('s'): save_data(x_data, y_data)
 
         # -----------------------------------------------------------
         # Re-train model (if the prediction is wrong)
